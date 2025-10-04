@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project AADESH - AI-Assisted Disaster Emergency & Surveillance Hub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        :root {
+            --primary: #1a73e8;
+            --secondary: #0d47a1;
+            --safe: #4caf50;
+            --danger: #f44336;
+            --blocked: #424242;
+            --warning: #ff9800;
+            --light: #f8f9fa;
+            --dark: #202124;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f5f5f5 100%);
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-icon {
+            font-size: 32px;
+            color: #bbdefb;
+        }
+        
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .tagline {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        
+        .alert-banner {
+            background: var(--warning);
+            color: white;
+            padding: 12px 20px;
+            text-align: center;
+            font-weight: 600;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .alert-banner i {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .main-content {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 140px);
+        }
+        
+        .sidebar {
+            width: 320px;
+            background: var(--light);
+            border-right: 1px solid #e0e0e0;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        
+        .map-overlay {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 15px;
+            width: 300px;
+            z-index: 1000;
+        }
+        
+        .map-legend {
+            margin-bottom: 20px;
+        }
+        
+        .legend-title {
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--dark);
+            font-size: 16px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        
+        .color-safe {
+            background: var(--safe);
+        }
+        
+        .color-danger {
+            background: var(--danger);
+        }
+        
+        .color-blocked {
+            background: var(--blocked);
+        }
+        
+        .map-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .control-btn {
+            padding: 12px 15px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--secondary);
+        }
+        
+        .btn-secondary {
+            background: #e0e0e0;
+            color: var(--dark);
+        }
+        
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-title i {
+            color: var(--primary);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .safe-stat {
+            color: var(--safe);
+        }
+        
+        .danger-stat {
+            color: var(--danger);
+        }
+        
+        .blocked-stat {
+            color: var(--blocked);
+        }
+        
+        .team-list {
+            list-style: none;
+        }
+        
+        .team-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--primary);
+        }
+        
+        .team-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .status-active {
+            background: var(--safe);
+        }
+        
+        .status-inactive {
+            background: #bdbdbd;
+        }
+        
+        .team-info {
+            flex: 1;
+        }
+        
+        .team-name {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+        
+        .team-location {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .alert-list {
+            list-style: none;
+        }
+        
+        .alert-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--warning);
+        }
+        
+        .alert-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #fff8e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            color: var(--warning);
+        }
+        
+        .alert-info {
+            flex: 1;
+        }
+        
+        .alert-title {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+        
+        .alert-desc {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .data-source {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .source-logo {
+            width: 30px;
+            height: 30px;
+            background: #e3f2fd;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--dark);
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .ai-analysis {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .analysis-visual {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .image-container {
+            flex: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .image-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .image-label {
+            text-align: center;
+            padding: 8px;
+            background: #f5f5f5;
+            font-weight: 600;
+        }
+        
+        .analysis-results {
+            margin-top: 20px;
+        }
+        
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .result-value {
+            font-weight: 600;
+        }
+        
+        .progress-container {
+            margin-top: 5px;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            border-radius: 4px;
+        }
+        
+        .progress-safe {
+            background: var(--safe);
+            width: 65%;
+        }
+        
+        .progress-danger {
+            background: var(--danger);
+            width: 25%;
+        }
+        
+        .progress-blocked {
+            background: var(--blocked);
+            width: 10%;
+        }
+        
+        .tab-container {
+            margin-top: 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            font-weight: 600;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab.active {
+            border-bottom: 3px solid var(--primary);
+            color: var(--primary);
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px 0;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: 300px;
+            }
+            
+            .map-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-satellite-dish"></i>
+                </div>
+                <div>
+                    <div class="logo-text">Project AADESH</div>
+                    <div class="tagline">AI-Assisted Disaster Emergency & Surveillance Hub</div>
+                </div>
+            </div>
+            <div class="header-info">
+                <div style="font-size: 14px; opacity: 0.9;">Flood Response Mode</div>
+                <div style="font-size: 18px; font-weight: 700;">ODISHA FLOODS 2024</div>
+            </div>
+        </header>
+        
+        <div class="alert-banner">
+            <i class="fas fa-exclamation-triangle"></i>
+            ACTIVE DISASTER: MAJOR FLOODING IN BALASORE DISTRICT. 3 NDRF TEAMS DEPLOYED.
+        </div>
+        
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="section">
+                    <div class="section-title">
+                        <i class="fas fa-chart-bar"></i>
+                        Situation Overview
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value safe-stat">65%</div>
+                            <div class="stat-label">Drivable Routes</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value danger-stat">25%</div>
+                            <div class="stat-label">Flooded Areas</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value blocked-stat">10%</div>
+                            <div class="stat-label">Blocked Routes</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" style="color: var(--primary);">3/5</div>
+                            <div class="stat-label">Active Rescue Teams</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">
+                        <i class="fas fa-users"></i>
+                        Response Teams
+                    </div>
+                    <ul class="team-list">
+                        <li class="team-item">
+                            <div class="team-status status-active"></div>
+                            <div class="team-info">
+                                <div class="team-name">NDRF Team Alpha</div>
+                                <div class="team-location">Balasore Sector 2</div>
+                            </div>
+                            <i class="fas fa-boat" style="color: var(--primary);"></i>
+                        </li>
+                        <li class="team-item">
+                            <div class="team-status status-active"></div>
+                            <div class="team-info">
+                                <div class="team-name">NDRF Team Beta</div>
+                                <div class="team-location">Near Baliapal</div>
+                            </div>
+                            <i class="fas fa-truck" style="color: var(--safe);"></i>
+                        </li>
+                        <li class="team-item">
+                            <div class="team-status status-active"></div>
+                            <div class="team-info">
+                                <div class="team-name">SDRF Team 1</div>
+                                <div class="team-location">Basta Region</div>
+                            </div>
+                            <i class="fas fa-helicopter" style="color: var(--warning);"></i>
+                        </li>
+                        <li class="team-item">
+                            <div class="team-status status-inactive"></div>
+                            <div class="team-info">
+                                <div class="team-name">NDRF Team Gamma</div>
+                                <div class="team-location">On Standby</div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Recent Alerts
+                    </div>
+                    <ul class="alert-list">
+                        <li class="alert-item">
+                            <div class="alert-icon">
+                                <i class="fas fa-water"></i>
+                            </div>
+                            <div class="alert-info">
+                                <div class="alert-title">Rising Water Levels</div>
+                                <div class="alert-desc">Balasore Central - +2ft in last 3 hours</div>
+                            </div>
+                        </li>
+                        <li class="alert-item">
+                            <div class="alert-icon">
+                                <i class="fas fa-road"></i>
+                            </div>
+                            <div class="alert-info">
+                                <div class="alert-title">Route Blocked</div>
+                                <div class="alert-desc">NH-16 near Chandipur</div>
+                            </div>
+                        </li>
+                        <li class="alert-item">
+                            <div class="alert-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="alert-info">
+                                <div class="alert-title">Rescue Request</div>
+                                <div class="alert-desc">25 people stranded in Sahadevkhunta</div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="data-source">
+                    <div class="source-logo">
+                        <i class="fas fa-satellite"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight: 600;">Data Source: ISRO</div>
+                        <div style="font-size: 12px; color: #666;">Satellite imagery updated 30 mins ago</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="map-container">
+                <div id="map"></div>
+                
+                <div class="map-overlay">
+                    <div class="map-legend">
+                        <div class="legend-title">Route Status</div>
+                        <div class="legend-item">
+                            <div class="legend-color color-safe"></div>
+                            <div>Drivable / Safe</div>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color color-danger"></div>
+                            <div>Flooded / Dangerous</div>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color color-blocked"></div>
+                            <div>Blocked / Impassable</div>
+                        </div>
+                    </div>
+                    
+                    <div class="map-controls">
+                        <button class="control-btn btn-primary" id="analyze-btn">
+                            <i class="fas fa-brain"></i>
+                            Run AI Analysis
+                        </button>
+                        <button class="control-btn btn-secondary" id="refresh-btn">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh Data
+                        </button>
+                        <button class="control-btn btn-secondary" id="teams-btn">
+                            <i class="fas fa-user-friends"></i>
+                            View All Teams
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- AI Analysis Modal -->
+    <div class="modal" id="analysis-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">AI Route Analysis</div>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="ai-analysis">
+                    <div class="analysis-visual">
+                        <div class="image-container">
+                            <img src="https://images.unsplash.com/photo-1582213782116-ca9d198a6e7f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80" alt="Satellite Image">
+                            <div class="image-label">Satellite Input</div>
+                        </div>
+                        <div class="image-container">
+                            <img src="https://images.unsplash.com/photo-1570740325859-50b1b6d30f5d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80" alt="AI Analysis">
+                            <div class="image-label">AI Analysis Output</div>
+                        </div>
+                    </div>
+                    
+                    <div class="analysis-results">
+                        <div class="result-item">
+                            <div>Drivable Routes Detected</div>
+                            <div class="result-value" style="color: var(--safe);">65%</div>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar progress-safe"></div>
+                        </div>
+                        
+                        <div class="result-item">
+                            <div>Flooded Areas Identified</div>
+                            <div class="result-value" style="color: var(--danger);">25%</div>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar progress-danger"></div>
+                        </div>
+                        
+                        <div class="result-item">
+                            <div>Blocked Routes</div>
+                            <div class="result-value" style="color: var(--blocked);">10%</div>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar progress-blocked"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-container">
+                        <div class="tabs">
+                            <div class="tab active" data-tab="details">Analysis Details</div>
+                            <div class="tab" data-tab="recommendations">Recommendations</div>
+                        </div>
+                        
+                        <div class="tab-content active" id="details-tab">
+                            <p>The AI model analyzed recent satellite imagery using semantic segmentation to classify terrain into three categories:</p>
+                            <ul style="margin: 10px 0 10px 20px;">
+                                <li>Green zones represent areas confirmed safe for vehicle passage</li>
+                                <li>Red zones indicate flooded or waterlogged areas</li>
+                                <li>Black zones show routes blocked by debris or structural damage</li>
+                            </ul>
+                            <p>Model confidence: 92.3% | Last updated: 15 minutes ago</p>
+                        </div>
+                        
+                        <div class="tab-content" id="recommendations-tab">
+                            <p>Based on current analysis:</p>
+                            <ul style="margin: 10px 0 10px 20px;">
+                                <li>Prioritize evacuation via NH-16 northern segment</li>
+                                <li>Deploy boats to Sahadevkhunta region (red zone)</li>
+                                <li>Avoid Chandipur coastal road (completely blocked)</li>
+                                <li>Reroute Team Beta through Baliapal alternate route</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialize the map
+        const map = L.map('map').setView([21.494, 86.931], 12);
+        
+        // Add a tile layer (using OpenStreetMap as base)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        // Define colors for different route statuses
+        const safeStyle = { color: '#4caf50', weight: 6, opacity: 0.8 };
+        const dangerStyle = { color: '#f44336', weight: 6, opacity: 0.8 };
+        const blockedStyle = { color: '#424242', weight: 6, opacity: 0.8, dashArray: '10, 10' };
+        
+        // Add sample route data (in a real app, this would come from the AI analysis)
+        const routes = [
+            { 
+                coords: [[21.52, 86.90], [21.51, 86.92], [21.50, 86.94], [21.49, 86.95]], 
+                status: 'safe', 
+                name: 'NH-16 Northern Segment' 
+            },
+            { 
+                coords: [[21.48, 86.92], [21.47, 86.93], [21.46, 86.94], [21.45, 86.96]], 
+                status: 'danger', 
+                name: 'Coastal Road' 
+            },
+            { 
+                coords: [[21.50, 86.88], [21.49, 86.89], [21.48, 86.91]], 
+                status: 'blocked', 
+                name: 'Chandipur Access Road' 
+            },
+            { 
+                coords: [[21.53, 86.93], [21.52, 86.94], [21.51, 86.95], [21.50, 86.97]], 
+                status: 'safe', 
+                name: 'Baliapal Alternate Route' 
+            }
+        ];
+        
+        // Add routes to the map
+        routes.forEach(route => {
+            let style;
+            if (route.status === 'safe') style = safeStyle;
+            else if (route.status === 'danger') style = dangerStyle;
+            else style = blockedStyle;
+            
+            const polyline = L.polyline(route.coords, style).addTo(map);
+            polyline.bindPopup(`<b>${route.name}</b><br>Status: ${route.status.toUpperCase()}`);
+        });
+        
+        // Add flood zones (red areas)
+        const floodZones = [
+            { coords: [[21.47, 86.92], [21.46, 86.93], [21.45, 86.94], [21.46, 86.95]] },
+            { coords: [[21.44, 86.96], [21.43, 86.97], [21.44, 86.98], [21.45, 86.97]] }
+        ];
+        
+        floodZones.forEach(zone => {
+            L.polygon(zone.coords, {
+                color: '#f44336',
+                fillColor: '#f44336',
+                fillOpacity: 0.3,
+                weight: 2
+            }).addTo(map).bindPopup('<b>Flooded Area</b><br>Water depth: 2-4 ft');
+        });
+        
+        // Add team markers
+        const teams = [
+            { position: [21.50, 86.93], name: 'NDRF Team Alpha', status: 'active' },
+            { position: [21.48, 86.95], name: 'NDRF Team Beta', status: 'active' },
+            { position: [21.46, 86.90], name: 'SDRF Team 1', status: 'active' }
+        ];
+        
+        teams.forEach(team => {
+            const icon = L.divIcon({
+                html: `<div style="background-color: ${team.status === 'active' ? '#4caf50' : '#9e9e9e'}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>`,
+                className: 'team-marker',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+            
+            L.marker(team.position, { icon: icon })
+                .addTo(map)
+                .bindPopup(`<b>${team.name}</b><br>Status: ${team.status.toUpperCase()}`);
+        });
+        
+        // Modal functionality
+        const modal = document.getElementById('analysis-modal');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const closeModal = document.querySelector('.close-modal');
+        
+        analyzeBtn.addEventListener('click', () => {
+            modal.style.display = 'flex';
+        });
+        
+        closeModal.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+        
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+        
+        // Tab functionality
+        const tabs = document.querySelectorAll('.tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                
+                // Update active tab
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Show corresponding content
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(`${tabId}-tab`).classList.add('active');
+            });
+        });
+        
+        // Refresh button functionality
+        document.getElementById('refresh-btn').addEventListener('click', () => {
+            alert('Data refresh requested. Satellite imagery update in progress...');
+        });
+        
+        // Teams button functionality
+        document.getElementById('teams-btn').addEventListener('click', () => {
+            alert('Showing all response teams on the map...');
+        });
+    </script>
+</body>
+</html>
